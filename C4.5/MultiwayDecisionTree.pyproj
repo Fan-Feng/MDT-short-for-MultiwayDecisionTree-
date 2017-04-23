@@ -4,13 +4,14 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>b08c5145-1f5a-4b82-809c-361f714e0934</ProjectGuid>
-    <ProjectHome>.</ProjectHome>
+    <ProjectHome>
+    </ProjectHome>
     <StartupFile>test.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
-    <Name>C4.5</Name>
+    <Name>MultiwayDecisionTree</Name>
     <RootNamespace>C4.5</RootNamespace>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -22,7 +23,10 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="C4dot5.py" />
+    <Compile Include="C:\Users\lenovo\Desktop\MultiwayDecisionTree.py">
+      <SubType>Code</SubType>
+      <Link>MultiwayDecisionTree.py</Link>
+    </Compile>
     <Compile Include="test.py">
       <SubType>Code</SubType>
     </Compile>
