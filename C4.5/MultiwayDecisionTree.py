@@ -18,6 +18,10 @@ This algorithm places breakpoints wherever the class changes.
 # License: BSD 3 clause
 
 import collections
+import pandas as pd
+import numpy as np
+from discretization import MDLP_Discretizer
+
 
 class Node:
     '''Tree node
@@ -38,6 +42,8 @@ class Node:
         self.cutType = None
         self.cutPoint = []
         self.cutCategories = []
+
+        self.majorClass = []
     
     def setData(self,rows):
         self.dataset = rows
@@ -51,6 +57,16 @@ class Node:
 class DecisionTree:
     '''Multi-way tree classifier
 
+    This multiway decision tree classifier:
+    Splitting:
+    1) continuous variables:
+       local entropy-based discretization
+    2) categorical variables:
+        mutliway splitting used in C4.5 
+
+    Pruning:
+    Each variable will be used at most once, hence it's unnecessary 
+    to prune. 
 
     Parameters: 
     _______________
@@ -64,15 +80,18 @@ class DecisionTree:
 
     Example
     _______________
-    >>> from
-    >>>
+    >>> from MultiwayDecisionTree import DecisionTree
+    >>>DT = DecisionTree(categorical_predictors = [1,1,1])
+    >> DT.fit(trainData)
     '''
     def __init__(self,
                  criterion = 'entropy',
                  categorical_predictors = None,
+                 features_name = None,
                  min_samples_split = 2):
         # Representation: node and reference
         self.criterion = criterion
+        self.featues_name = features_name
         self.categorical_predictors = categorical_predictors
         self.min_samples_split = min_samples_split
 
@@ -103,14 +122,44 @@ class DecisionTree:
         else:
             evaluationFunction = entropy
         # Determine the categorical_predictors
-        if self.categorical_predictors == None:
+        if self.categorical_predictors is None:
             self.categorical_predictors = [0]*n_features 
 
         root_Node = Node()
         root_Node.setData(trainData)
+        root_Node.majorClass = majorClass(trainData)
         self.rootNode = root_Node
         DFSGrowTree(root_Node,self.min_samples_split,self.categorical_predictors,evaluationFunction)
-     
+
+
+    def plotTree(self,indent = ' '):
+        """plot the obtained decision tree"""
+        result_string = toString(self.rootNode,self.featues_name,self.categorical_predictors)
+        print(result_string)
+        return result_string
+
+def toString(node,features_name,categorical_predictors,indent= ' '):
+    if not node.children:
+        return str(node.majorClass[0])
+    else:
+        if categorical_predictors[node.cutPredictor]:
+            result_String = ''
+            for i,child in enumerate(node.children):
+                decision = features_name[node.cutPredictor] +'=='+ str(node.cutCategories[i])
+                branch = indent + toString(child,features_name,categorical_predictors,indent +'\t\t')
+                result_String = result_String + decision +'\n' + branch + '\n'
+        else:#if splitting varible is continuous
+            cutPoints = [-np.inf] + node.cutPoint + [np.inf]
+            intervals = []
+            result_String = ''
+            for i,child in enumerate(node.children):
+                interval = str(cutPoints[i]) + ' to '  + str(cutPoints[i+1])
+                intervals.append(interval)
+                decision = features_name[node.cutPredictor] + ' in ' + interval
+                branch = indent + toString(child,features_name,categorical_predictors,indent +'\t\t')
+                result_String = result_String + decision +'\n' + branch + '\n'
+        return result_String
+
 def uniqueCount(rows):
     results = {}
     ResponseVar = [row[-1] for row in rows]
@@ -141,32 +190,41 @@ def gini(rows):
     return G
 
 def divideSet(rows, column, categorical = 0):
-    cutPoint = []
+    cutPoints = []
     if categorical: # the splitting variable is categorical
-        values = set([row[column] for row in rows])
+        values = list(set([row[column] for row in rows]))
         lists = []
         for value in values:
             l = [row for row in rows if row[column] == value]
             lists.append(l)
-    else: # the splitting variable is categorical
-        # sort rows according to column, 
-        sort_idx = sorted(range(len(rows)),key = lambda k:rows[k][column])
-        rows_sorted = [rows[ele] for ele in sort_idx]
-        
-        lists = []
-        l = []
-        l.append(rows_sorted[0])
-        for i in range(1,len(rows)):
-            if rows_sorted[i-1][-1] != rows_sorted[i][-1]:
-                cutPoint.append((rows_sorted[i-1][column]+rows_sorted[i][column])/2)
-                lists.append(l)
-                l = []
-            l.append(rows_sorted[i])
-        lists.append(l)
-    return lists,cutPoint
-def DFSGrowTree(current_Node,min_samples_split,categorical_predictors,evaluationFunction = entropy):
+    else: # the splitting variable is numerical
+        # local entropy-based discretization 
+        data = pd.DataFrame(rows,columns = ['feature%s'%i for i in range(len(rows[0])-1)] +['label'])
+
+        discretizer = MDLP_Discretizer(data,class_label = 'label',\
+                               out_path_data = 'result.csv',out_path_bins = 'result_bins.csv',features = ['feature%s'%column])
+        lists = [np.array(ele) for ele in discretizer.subsets]
+        cutPoints = discretizer.cutPoints
+    return lists,cutPoints
+
+def majorClass(s):
+    # return major class in Set s
+    labels = [row[-1] for row in s]
+    values = set(labels)
+    major = labels[0]
+    count = 1
+    for value in values:
+        temp = labels.count(value)
+        if temp > count:
+            count = temp
+            major = value
+    return major,count
+
+def DFSGrowTree(current_Node,min_samples_split,categorical_predictors,evaluationFunction = entropy,features_left= None):
     # This function grow a decision tree in a recursive manner
     rows = current_Node.dataset
+    if features_left is None:
+        features_left = range(len(rows[0])-1)
 
     if len(rows)<=min_samples_split:return 
     currentScore = evaluationFunction(rows)
@@ -178,13 +236,13 @@ def DFSGrowTree(current_Node,min_samples_split,categorical_predictors,evaluation
 
     n_samples,n_features = len(rows),len(rows[0])-1
 
-    for column in range(0,n_features):
+    for column in features_left:
         (sets,cutPoint) = divideSet(rows,column,categorical_predictors[column])
         #Gain: Entropy or Gini
         newScore = 0
-        for set in sets:
-            p = float(len(set))/len(rows)
-            newScore += p*evaluationFunction(set)
+        for s in sets:
+            p = float(len(s))/len(rows)
+            newScore += p*evaluationFunction(s)
         gain = currentScore - newScore
         if gain > bestGain:
             bestGain = gain
@@ -193,17 +251,24 @@ def DFSGrowTree(current_Node,min_samples_split,categorical_predictors,evaluation
             bestSets = sets
     #Step2: grow each branch recursively. 
     if bestGain > 0: # If the splitting process do not stop.
+
+        # exclude this feature(Attribute) from feature_left
+        features_left = list(features_left)
+        features_left.remove(bestAttribute)
+
         # if bestAttribute is categorical
-        cutCategories = set([row[bestAttribute] for row in rows]) if categorical_predictors[bestAttribute] else []
+        cutCategories = list(set([row[bestAttribute] for row in rows])) if categorical_predictors[bestAttribute] else []
         children = []
-        for set in bestSets:
+        for s in bestSets:
             node_Temp = Node()
-            node_Temp.setData(set)
+            node_Temp.setData(s)
+            node_Temp.majorClass = majorClass(s)
             children.append(node_Temp)
         current_Node.setCut(bestAttribute,categorical_predictors[bestAttribute],bestCutPoint,cutCategories,children)
         for child in current_Node.children:
-            DFSGrowTree(child,min_samples_split,categorical_predictors,evaluationFunction)
+            DFSGrowTree(child,min_samples_split,categorical_predictors,evaluationFunction,features_left)
         return
     else:
         return
 
+    

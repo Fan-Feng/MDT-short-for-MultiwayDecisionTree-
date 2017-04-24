@@ -6,7 +6,7 @@
     <ProjectGuid>b08c5145-1f5a-4b82-809c-361f714e0934</ProjectGuid>
     <ProjectHome>
     </ProjectHome>
-    <StartupFile>test.py</StartupFile>
+    <StartupFile>test_GBCF2.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -23,10 +23,12 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="C:\Users\lenovo\Desktop\MultiwayDecisionTree.py">
+    <Compile Include="discretization.py" />
+    <Compile Include="Entropy.py" />
+    <Compile Include="test_GBCF2.py">
       <SubType>Code</SubType>
-      <Link>MultiwayDecisionTree.py</Link>
     </Compile>
+    <Compile Include="MultiwayDecisionTree.py" />
     <Compile Include="test.py">
       <SubType>Code</SubType>
     </Compile>
