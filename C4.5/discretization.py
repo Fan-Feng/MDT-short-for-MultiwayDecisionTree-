@@ -258,13 +258,13 @@ class MDLP_Discretizer(object):
         cut_Points = []
         point = -np.inf 
         for attr in self._features:
-            cut_Points = self._cuts[attr]
+            cut_Points = [point]+self._cuts[attr]+[-point]
             subsets = []
-            for point in cut_Points:
-                subsets.append(self._data_raw.ix[self._data_raw.ix[:,attr]<=point,:])
-            subsets.append(self._data_raw.ix[self._data_raw.ix[:,attr]>point,:])
+            for i in range(len(cut_Points)-1):
+                subsets.append(self._data_raw.ix[np.logical_and(self._data_raw.ix[:,attr]<=cut_Points[i+1],\
+                                                                self._data_raw.ix[:,attr]>cut_Points[i]),:])
         self.subsets = subsets
-        self.cutPoints = cut_Points
+        self.cutPoints = self._cuts[attr]
 
         
         '''

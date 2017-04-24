@@ -6,10 +6,9 @@ import MultiwayDecisionTree as MDT
 import sequencingControl as sc
 
 # read trainY of GBCF2
-os.chdir(r'C:\Users\lenovo\Desktop\C4dot5')
-trainX = pd.read_csv(r'.\GBCF2\originData\trainX.csv',parse_dates = [0,3])
-trainY = pd.read_csv(r'.\GBCF2\originData\trainY.csv',parse_dates = [0])
-trainY.columns = ['timestamp','data']
-trainY = trainY.set_index('timestamp')
-trainY.head()
-sc.plot_heatMap(trainY.reset_index(),'{}.jpg'.format(1))
+trainData = pd.read_csv('trainData.csv')
+trainData = np.array(trainData)
+
+dtClassifier = MDT.DecisionTree(features_name = ['month','day','time','weekendOrHoliday','temp'],
+                                categorical_predictors = [0,0,0,1,0])
+dtClassifier.fit(trainData)

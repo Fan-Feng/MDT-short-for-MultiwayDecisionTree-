@@ -23,8 +23,10 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="dataAnalysis.py" />
     <Compile Include="discretization.py" />
     <Compile Include="Entropy.py" />
+    <Compile Include="sequencingControl.py" />
     <Compile Include="test_GBCF2.py">
       <SubType>Code</SubType>
     </Compile>
@@ -32,6 +34,9 @@
     <Compile Include="test.py">
       <SubType>Code</SubType>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="trainData.csv" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

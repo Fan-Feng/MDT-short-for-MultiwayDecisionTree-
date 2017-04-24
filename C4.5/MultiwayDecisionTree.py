@@ -138,15 +138,51 @@ class DecisionTree:
         print(result_string)
         return result_string
 
+    def prune(self, minGain, pruneCriterion ='entropy', notify = False):
+        # This function implement a sub-tree replacement post-pruning algorithm
+        subtreeReplacement(self.rootNode)
+def subtreeReplacement(node, minGain,pruneCriterion = 'entropy',notify = False):
+    #determine the prunign criterion: "entropy", "gini" or "misclassificationRate"
+    if pruneCriterion == 'entropy':
+        evaluationFunction = entropy
+    elif pruneCriterion == 'gini':
+        evaluationFunction = gini
+    else:
+        evaluationFunction = misclassificationRate
+
+    # recursive call for each branch
+    log = False
+    if node.children:
+        for child in node.children:
+            if child.children:
+                # if this child is not a leaf, 
+                subtreeReplacement(child,minGain,pruneCriterion,notify)
+            if child.children:# if this child is still a leaf
+                break
+            else:
+                log = log or child.children 
+        else:
+            if not log:
+            #The children of current node are all leaves
+            # merge leaves(potentially)
+                newScore = 0
+                for child in node.children:
+                    p = len(child.dataset)/len(node.dataset)
+                    newScore += p*evaluationFunction(child.dataset)
+                delta = evaluationFunction(node.dataset) - newScore
+                if delta < minGain:
+                    if notigy: print('A branch was pruned: gain = %f'%delta)
+                    node.children = []
+             
 def toString(node,features_name,categorical_predictors,indent= ' '):
     if not node.children:
-        return str(node.majorClass[0])
+        return indent + str(node.majorClass[0])
     else:
         if categorical_predictors[node.cutPredictor]:
             result_String = ''
             for i,child in enumerate(node.children):
-                decision = features_name[node.cutPredictor] +'=='+ str(node.cutCategories[i])
-                branch = indent + toString(child,features_name,categorical_predictors,indent +'\t\t')
+                decision = indent + features_name[node.cutPredictor] +'=='+ str(node.cutCategories[i])
+                branch = toString(child,features_name,categorical_predictors,indent +'\t\t')
                 result_String = result_String + decision +'\n' + branch + '\n'
         else:#if splitting varible is continuous
             cutPoints = [-np.inf] + node.cutPoint + [np.inf]
@@ -155,8 +191,8 @@ def toString(node,features_name,categorical_predictors,indent= ' '):
             for i,child in enumerate(node.children):
                 interval = str(cutPoints[i]) + ' to '  + str(cutPoints[i+1])
                 intervals.append(interval)
-                decision = features_name[node.cutPredictor] + ' in ' + interval
-                branch = indent + toString(child,features_name,categorical_predictors,indent +'\t\t')
+                decision = indent + features_name[node.cutPredictor] + ' in ' + interval
+                branch = toString(child,features_name,categorical_predictors,indent +'\t\t')
                 result_String = result_String + decision +'\n' + branch + '\n'
         return result_String
 
@@ -168,6 +204,9 @@ def uniqueCount(rows):
         results[ele] = ResponseVar.count(ele)
     return results
 
+def misclassificationRate(rows):
+    mClass,count = majorClass(rows)
+    return 1 - count/len(rows)
 def entropy(rows):
     from math import log
     log2 = lambda x:log(x)/log(2)

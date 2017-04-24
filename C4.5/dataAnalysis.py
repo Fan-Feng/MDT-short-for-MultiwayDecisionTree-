@@ -1,7 +1,4 @@
-
 # coding: utf-8
-
-# In[17]:
 
 '''
     This .py file includes many data analysis tools that I created before.
@@ -19,10 +16,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import sklearn
-get_ipython().magic('matplotlib inline')
+#get_ipython().magic('matplotlib inline')
 
-
-# In[34]:
 
 def OutlierElimination(a,method = '3sigma'):
     '''
@@ -96,8 +91,6 @@ def fivePoint(a):
         a.loc[logical_Idx] = A.ix[logical_Idx,:].mean(axis = 1,skipna = True)
     return a,count
 
-
-# In[ ]:
 
 
 

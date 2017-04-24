@@ -1,4 +1,3 @@
-
 # coding: utf-8
 
 # In[72]:
@@ -13,13 +12,8 @@ from sklearn import tree
 import seaborn as sns
 
 
-# In[1]:
-
 # user-defined module
-import dataAnalysis as da
-
-
-# In[70]:
+#import dataAnalysis as da
 
 def chillerCombinationExtract(data,c = 0.05):
     # c: on-off threshold
