@@ -15,8 +15,10 @@ data = data.fillna(0)
 
 rows = np.array(data)
 DTClassifier = DecisionTree(categorical_predictors = [1,1,1,0,0,1,1,1,0] + [1]*23 +[0,0,0] + [1,1,1],
-                            features_name = ['features%s'%i for i in range(38)])
+                            features_name = ['features%s'%i for i in range(38)],
+                            min_Gain = 0.4)
 DTClassifier.fit(rows)
-
+bef = DTClassifier.plotTree()
+DTClassifier.prune(mergeNeighbors = True)
 print("Decision tree successfully fitted")
-DTClassifier.plotTree()
+after = DTClassifier.plotTree()

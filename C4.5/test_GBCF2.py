@@ -12,3 +12,4 @@ trainData = np.array(trainData)
 dtClassifier = MDT.DecisionTree(features_name = ['month','day','time','weekendOrHoliday','temp'],
                                 categorical_predictors = [0,0,0,1,0])
 dtClassifier.fit(trainData)
+dtClaffifier.prune()
