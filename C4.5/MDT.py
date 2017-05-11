@@ -22,15 +22,18 @@ if __name__ == "__main__":
                          help = 'fileName of dataset',
                          default = None)
     parser.add_argument('-o','--output',
+                        type = str,
                          dest = 'output',
                          help = 'output file Name, .txt',
                          default = None)
     parser.add_argument('-c','--categorical_predictors',
                         nargs = '+',
+                        type = int,
                          dest = 'categorical_predictors',
                          help = 'categorical_predictors,e.g. [1,1,0,1]',
                          default = None)
     parser.add_argument('-g','--min_Gain',
+                        type = float,
                          dest = 'min_Gain',
                          help = 'minimum gain， used in control the size of the tree',
                          default = None)
@@ -44,25 +47,26 @@ if __name__ == "__main__":
     else:
         print('No dataset fileName specified, system will exit\n')
         sys.exit('System will exit')
-
+    
     data = data.fillna(method = 'bfill',axis = 0)
     data = data.fillna(0)
     rows = np.array(data)
 
     categorical_predictors = args.categorical_predictors
-    min_Gaim = args.min_Gain
+    min_Gain = args.min_Gain
     features_Name = list(data.columns)[:-1]
+    print(type(categorical_predictors[0]))
 
     DTClassifier = DecisionTree(categorical_predictors = categorical_predictors,
                             features_name = features_Name,
-                            min_Gain = 0.4)
+                            min_Gain = min_Gain)
     #fit tree
     DTClassifier.fit(rows)
     bef = DTClassifier.plotTree()
     DTClassifier.prune(mergeNeighbors = True)
     print("Decision tree successfully fitted")
     after = DTClassifier.plotTree(verbose = True)
-
+    
     output = args.output
     f = open(output,'w')
     f.write(after)

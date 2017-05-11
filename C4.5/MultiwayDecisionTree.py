@@ -159,7 +159,7 @@ class DecisionTree:
 
         root_Node = Node()
         root_Node.setData(trainData)
-        root_Node.majorClass = majorClass(trainData)
+        root_Node.setMajorClass(majorClass(trainData))
 
         self.__rootNode = root_Node
         DFSGrowTree(root_Node,self.__min_samples_split,self.__categorical_predictors,evaluationFunction)
@@ -214,8 +214,8 @@ def mergeNeighbors_Fun(node):
                 node.setChildren([])
                 node.setCutPoint([])
         else: #binominal
-            if ((not node.children[0].children) and (not node.children[1].children)) \
-                    and  majorClass(node.children[0].dataset)[0] == majorClass(node.children[1].dataset)[0]:
+            if ((not children[0].getChildren()) and (not children[1].getChildren())) \
+                    and  majorClass(children[0].getData())[0] == majorClass(children[1].getData())[0]:
                 node.setChildren([])
                 node.setCutPoint([])
     return
@@ -258,6 +258,7 @@ def subtreeReplacement(node, minGain,pruneCriterion = 'entropy',notify = False):
 def toString(node,features_name,categorical_predictors,indent= ' '):
     children = node.getChildren()
     if not children:
+
         return indent + str(node.getMajorClass()[0])
     else:
 

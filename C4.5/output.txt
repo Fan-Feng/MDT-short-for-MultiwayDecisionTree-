@@ -1,0 +1,50 @@
+ hour in -inf to 8.5
+ 		0
+ hour in 8.5 to 9.5
+ 		1
+ hour in 9.5 to 17.5
+ 		dayOfYear in -inf to 130.5
+ 				1
+ 		dayOfYear in 130.5 to 131.5
+ 				temp in -inf to 16.5
+ 						1
+ 				temp in 16.5 to 20.5
+ 						0
+ 				temp in 20.5 to inf
+ 						1
+
+ 		dayOfYear in 131.5 to 142.5
+ 				1
+ 		dayOfYear in 142.5 to 144.5
+ 				0
+ 		dayOfYear in 144.5 to 179.5
+ 				1
+ 		dayOfYear in 179.5 to 180.5
+ 				2
+ 		dayOfYear in 180.5 to 185.5
+ 				1
+ 		dayOfYear in 185.5 to 188.5
+ 				0
+ 		dayOfYear in 188.5 to inf
+ 				1
+
+ hour in 17.5 to 20.5
+ 		dayOfYear in -inf to 142.5
+ 				1
+ 		dayOfYear in 142.5 to 144.5
+ 				0
+ 		dayOfYear in 144.5 to 185.5
+ 				1
+ 		dayOfYear in 185.5 to 188.5
+ 				0
+ 		dayOfYear in 188.5 to inf
+ 				1
+
+ hour in 20.5 to 21.5
+ 		weekendOrHoliday==0
+ 				1
+ 		weekendOrHoliday==1
+ 				0
+
+ hour in 21.5 to inf
+ 		0
