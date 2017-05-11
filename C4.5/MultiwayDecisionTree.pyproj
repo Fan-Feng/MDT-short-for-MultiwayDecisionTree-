@@ -31,11 +31,12 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="MultiwayDecisionTree.py" />
-    <Compile Include="test.py">
+    <Compile Include="MDT.py">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="dataset.csv" />
     <Content Include="trainData.csv" />
   </ItemGroup>
   <PropertyGroup>

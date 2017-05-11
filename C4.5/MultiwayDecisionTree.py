@@ -1,22 +1,29 @@
 """This module implements a multi-way decision tree. 
 
+------------
+
+Author    |date      | Action
+----------+----------+------
+Fan Feng  |2017/4/19 | Create
+Fan Feng  |2017/5/11 | Modify the pattern of this module
+
+-------------
 1) The difference of this DT from popular DTs(e.g. C4.5, CART) 
 pertain to the splitting function for numerical variables. 
 
-The splitting function is quite similar to OneR algorithm, as following
+The splitting function is Entropy-based discretization.
+
 X | 1 2 3 4 5 6         X | 1 2 ||3 4|| 5 6
 --|------------  ==>    --|------------
 Y | T T F F T T         Y | T T ||F F ||T T
-This algorithm places breakpoints wherever the class changes. 
 
 2) The splitting function for categorical variables is same as the function used in C4.5 algorithm.
 
 3) Pruning function
-
+    
 """
 # Author: Fan Feng, Email: 18817598306@163.com
 # License: BSD 3 clause
-
 import collections
 import pandas as pd
 import numpy as np
@@ -33,26 +40,45 @@ class Node:
     cutPoint: applicable when cutType is "numerical"
     cutCategories: applicable when cutType is "categorical"
     '''
-
-    
     def __init__(self):
-        # Representation: node and reference
-        self.children = []
-        self.cutPredictor = None  
-        self.cutType = None
-        self.cutPoint = []
-        self.cutCategories = []
+        #Representation: node and reference
+        self.__children = None
+        self.__cutPredictor = None  
+        self.__cutType = None
+        self.__cutPoint = None
+        self.__cutCategories = None
+        self.__majorClass = None
+        self.__dataset = None
 
-        self.majorClass = []
-    
+    def setMajorClass(self,majorClass):
+        self.__majorClass = majorClass
+    def getMajorClass(self):
+        return self.__majorClass
     def setData(self,rows):
-        self.dataset = rows
-    def setCut(self,cutPredictor,cutType,cutPoint,cutCategories,children):
-        self.cutPredictor = cutPredictor
-        self.cutType = cutType
-        self.cutPoint = cutPoint
-        self.cutCategories = cutCategories
-        self.children = children
+        self.__dataset = rows
+    def getData(self):
+        return self.__dataset
+
+    def setCut(self,cutPredictor,cutType,cutPoint,cutCategories):
+        self.__cutPredictor = cutPredictor
+        self.__cutType = cutType
+        self.__cutPoint = cutPoint
+        self.__cutCategories = cutCategories
+    def getCutPredictor(self):
+        return self.__cutPredictor
+    def getCutType(self):
+        return self.__cutType
+    def setCutPoint(self,cutPoint):
+        self.__cutPoint = cutPoint
+    def getCutPoint(self):
+        return self.__cutPoint
+    def getCutCategories(self):
+        return self.__cutCategories
+
+    def setChildren(self,children):
+        self.__children = children
+    def getChildren(self):
+        return self.__children
 
 class DecisionTree:
     '''Multi-way tree classifier
@@ -96,23 +122,16 @@ class DecisionTree:
                  min_Gain = 0,
                  notify = False,
                  min_samples_split = 2):
-        # Representation: node and reference
-        self.criterion = criterion
-        self.featues_name = features_name
-        self.categorical_predictors = categorical_predictors
-        self.min_samples_split = min_samples_split
-
-        self.min_Gain = min_Gain
-        self.prune_Criterion = prune_Criterion
-        self.notify = notify
-        self.rootNode = None
-       
+        self.__criterion = criterion
+        self.__featues_name = features_name
+        self.__categorical_predictors = categorical_predictors
+        self.__min_samples_split = min_samples_split
+        self.__min_Gain = min_Gain
+        self.__prune_Criterion = prune_Criterion
+        self.__notify = notify
+        self.__rootNode = None      
     def fit(self,trainData):
         '''Grows and then returns a decision tree
-        ---|----      |----      |---
-        No.|author    |date      |action
-        ---|------    |------    |----
-        1  | Fan Feng | 2017/4/20|Create 
 
         Inputs:
         ----------------------------------
@@ -122,74 +141,84 @@ class DecisionTree:
               [[1,2,3,'T'],
                [1,2,4,'F'],
                [2,1,3,'T']]
-
+        ---|----      |----      |---
+        No.|author    |date      |action
+        ---|------    |------    |----
+        1  | Fan Feng | 2017/4/20|Create 
         '''
         # Determine output settings
         n_samples,n_features = len(trainData),len(trainData[0])-1
         # Determine the evaluationFunction
-        if self.criterion =="gini":
+        if self.__criterion =="gini":
             evaluationFunction = gini
         else:
             evaluationFunction = entropy
         # Determine the categorical_predictors
-        if self.categorical_predictors is None:
-            self.categorical_predictors = [0]*n_features 
+        if self.__categorical_predictors is None:
+            self.__categorical_predictors = [0]*n_features 
 
         root_Node = Node()
         root_Node.setData(trainData)
         root_Node.majorClass = majorClass(trainData)
-        self.rootNode = root_Node
-        DFSGrowTree(root_Node,self.min_samples_split,self.categorical_predictors,evaluationFunction)
+
+        self.__rootNode = root_Node
+        DFSGrowTree(root_Node,self.__min_samples_split,self.__categorical_predictors,evaluationFunction)
 
 
     def plotTree(self,indent = ' ',verbose = False):
         """plot the obtained decision tree"""
-        result_string = toString(self.rootNode,self.featues_name,self.categorical_predictors)
+        result_string = toString(self.__rootNode,self.__featues_name,self.__categorical_predictors)
         if verbose:
             print(result_string)
         return result_string
 
     def prune(self,mergeNeighbors = False):
         # This function implement a sub-tree replacement post-pruning algorithm
-        subtreeReplacement(self.rootNode,self.min_Gain,self.prune_Criterion,self.notify)
+        subtreeReplacement(self.__rootNode,self.__min_Gain,self.__prune_Criterion,self.__notify)
         if mergeNeighbors: # If mergeNeighbors is True, merge silbings with same class
-            mergeNeighbors(self.rootNode)
+            mergeNeighbors_Fun(self.__rootNode)
 
-def mergeNeighbors(node):   
-    if node.children:
-        for child in node.children:
-            mergeNeighbors(child)
+## standalone function
+def mergeNeighbors_Fun(node):   
+    children = node.getChildren()
+    if children:
+        for child in children:
+            mergeNeighbors_Fun(child)
+
     # merge siblings with same label
-    if node.children: # if node is not a leaf
-        if node.cutPoint: # if cut type is numerical
+    if children: # if node is not a leaf
+        cutPoint = node.getCutPoint()
+        if cutPoint: # if cut type is numerical
             newChildren = []
-            newChildren.append(node.children[0])
+            newChildren.append(children[0])
             cutPoints_ToRemove = []
-            for i in range(len(node.children)-1):
-                if ((not node.children[i].children) and (not node.children[i+1].children)) \
-                    and  majorClass(node.children[i].dataset) == majorClass(node.children[i+1].dataset):
-                 #if both these two children are leaves and their classes are 
-                    newChildren[-1].dataset = node.children[i].dataset + node.children[i+1].dataset
-                    cutPoints_ToRemove.append(node.cutPoint[i])
+            for i in range(len(children)-1):
+                if ((not children[i].getChildren()) and (not children[i+1].getChildren() )) \
+                    and  majorClass(children[i].getData())[0] == majorClass(children[i+1].getData())[0]:
+                 #if both these two children are leaves and their classes are the same
+                    if isinstance(children[i].getData(),list) and isinstance(children[i+1].getData(),list):
+                        newChildren[-1].setData(children[i].getData() + children[i+1].getData)
+                    elif isinstance(children[i].getData(),np.ndarray) and isinstance(children[i].getData(),np.ndarray):
+                        newChildren[-1].setData(np.concatenate((children[i].getData(),children[i+1].getData())))
+                    cutPoints_ToRemove.append(cutPoint[i])
                 else:
-                    newChildren.append(node.children[i+1])
+                    newChildren.append(children[i+1])
+
             for point in cutPoints_ToRemove:
-                node.cutPoint.remove(point)
-            node.children = newChildren
-            if len(node.children) == 1: # if there is only one child left, this node should be pruned
-                node.children = []
-                node.cutPoint = []
+                cutPoint.remove(point)
+
+            node.setCutPoint(cutPoint)
+            node.setChildren(newChildren)
+
+            if len(newChildren) == 1: # if there is only one child left, this node should be pruned
+                node.setChildren([])
+                node.setCutPoint([])
         else: #binominal
             if ((not node.children[0].children) and (not node.children[1].children)) \
-                    and  majorClass(node.children[0].dataset) == majorClass(node.children[0].dataset):
-                node.children = []
-                node.cutCategories = []
+                    and  majorClass(node.children[0].dataset)[0] == majorClass(node.children[1].dataset)[0]:
+                node.setChildren([])
+                node.setCutPoint([])
     return
-
-        
-
-
-
 
 def subtreeReplacement(node, minGain,pruneCriterion = 'entropy',notify = False):
     #determine the prunign criterion: "entropy", "gini" or "misclassificationRate"
@@ -202,46 +231,50 @@ def subtreeReplacement(node, minGain,pruneCriterion = 'entropy',notify = False):
 
     # recursive call for each branch
     log = False
-    if node.children:
-        for child in node.children:
-            if child.children:
+    children = node.getChildren()
+    if children:
+        for child in children:
+            if child.getChildren():
                 # if this child is not a leaf, 
                 subtreeReplacement(child,minGain,pruneCriterion,notify)
-            if child.children:# if this child is still not a leaf
+            if child.getChildren():# if this child is still not a leaf
                 break
             else:
-                log = log or child.children 
+                log = log or child.getChildren()
         else:
             if not log:
             #The children of current node are all leaves
             # merge leaves(potentially)
                 newScore = 0
-                for child in node.children:
-                    p = len(child.dataset)/len(node.dataset)
-                    newScore += p*evaluationFunction(child.dataset)
-                delta = evaluationFunction(node.dataset) - newScore
+                children = node.getChildren()
+                for child in children:
+                    p = len(child.getData())/len(node.getData())
+                    newScore += p*evaluationFunction(child.getData())
+                delta = evaluationFunction(node.getData()) - newScore
                 if delta < minGain:
                     if notify: print('A branch was pruned: gain = %f'%delta)
-                    node.children = []
+                    node.setChildren([])
              
 def toString(node,features_name,categorical_predictors,indent= ' '):
-    if not node.children:
-        return indent + str(node.majorClass[0])
+    children = node.getChildren()
+    if not children:
+        return indent + str(node.getMajorClass()[0])
     else:
-        if categorical_predictors[node.cutPredictor]:
+
+        if categorical_predictors[node.getCutPredictor()]:
             result_String = ''
-            for i,child in enumerate(node.children):
-                decision = indent + features_name[node.cutPredictor] +'=='+ str(node.cutCategories[i])
+            for i,child in enumerate(children):
+                decision = indent + features_name[node.getCutPredictor()] +'=='+ str(node.getCutCategories()[i])
                 branch = toString(child,features_name,categorical_predictors,indent +'\t\t')
                 result_String = result_String + decision +'\n' + branch + '\n'
         else:#if splitting varible is continuous
-            cutPoints = [-np.inf] + node.cutPoint + [np.inf]
+            cutPoints = [-np.inf] + node.getCutPoint() + [np.inf]
             intervals = []
             result_String = ''
-            for i,child in enumerate(node.children):
+            for i,child in enumerate(children):
                 interval = str(cutPoints[i]) + ' to '  + str(cutPoints[i+1])
                 intervals.append(interval)
-                decision = indent + features_name[node.cutPredictor] + ' in ' + interval
+                decision = indent + features_name[node.getCutPredictor()] + ' in ' + interval
                 branch = toString(child,features_name,categorical_predictors,indent +'\t\t')
                 result_String = result_String + decision +'\n' + branch + '\n'
         return result_String
@@ -301,10 +334,10 @@ def divideSet(rows, column, categorical = 0,mergeNeighbors = False):
             cutPoints_Toremove = []
             
             for i in range(len(lists)-1):
-                if majorClass(lists[i]) == majorClass(lists[i+1]):
+                if majorClass(lists[i])[0] == majorClass(lists[i+1])[0]:
                     cutPoints_Toremove.append(cutPoints[i])
                     newLists[-1] = newLists[-1] + lists[i+1]
-                    print('two subsets was merged,class1:%s,class2:%s'%(majorClass(lists[i]),majorClass(lists[i])))
+                    print('two subsets was merged,class1:%s,class2:%s'%(majorClass(lists[i])[0],majorClass(lists[i])[0]))
                 else:
                     newLists.append(lists[i+1])
             for point in cutPoints_Toremove:
@@ -328,7 +361,7 @@ def majorClass(s):
 
 def DFSGrowTree(current_Node,min_samples_split,categorical_predictors,evaluationFunction = entropy,features_left= None):
     # This function grow a decision tree in a recursive manner
-    rows = current_Node.dataset
+    rows = current_Node.getData()
     if features_left is None:
         features_left = range(len(rows[0])-1)
 
@@ -368,10 +401,11 @@ def DFSGrowTree(current_Node,min_samples_split,categorical_predictors,evaluation
         for s in bestSets:
             node_Temp = Node()
             node_Temp.setData(s)
-            node_Temp.majorClass = majorClass(s)
+            node_Temp.setMajorClass(majorClass(s))
             children.append(node_Temp)
-        current_Node.setCut(bestAttribute,categorical_predictors[bestAttribute],bestCutPoint,cutCategories,children)
-        for child in current_Node.children:
+        current_Node.setCut(bestAttribute,categorical_predictors[bestAttribute],bestCutPoint,cutCategories)
+        current_Node.setChildren(children)
+        for child in current_Node.getChildren():
             DFSGrowTree(child,min_samples_split,categorical_predictors,evaluationFunction,features_left)
         return
     else:

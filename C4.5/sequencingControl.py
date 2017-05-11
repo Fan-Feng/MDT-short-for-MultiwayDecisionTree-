@@ -75,9 +75,3 @@ def bi2de(DaIn):
     #DaOut = list(map(lambda i:int(''.join(list(map(lambda b: str(int(b)),DaIn.iloc[i,:]))), base = 2) ,range(DaIn.shape[0])))
     multiplier = [2**i for i in range(DaIn.shape[1])][::-1]
     return DaIn.dot(multiplier)
-
-
-# In[ ]:
-
-
-
